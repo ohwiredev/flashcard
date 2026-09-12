@@ -8,8 +8,7 @@ const button = cva(
     variants: {
       intent: {
         primary: 'bg-accent text-accent-fg shadow-card hover:brightness-110 hover:shadow-card-hover',
-        secondary:
-          'border border-border bg-bg-elevated text-fg shadow-card hover:border-border-strong hover:shadow-card-hover',
+        secondary: 'bg-fg/8 text-fg hover:bg-fg/12 active:bg-fg/16',
         ghost: 'bg-transparent text-fg-muted hover:bg-fg/5 hover:text-fg',
         destructive: 'bg-red-600 text-white shadow-card hover:bg-red-500 hover:shadow-card-hover',
       },

@@ -34,6 +34,25 @@
   /* Global fallback so deck-accent utilities are valid outside a [data-accent] container. */
   --deck-accent: var(--color-accent);
   --deck-accent-fg: var(--color-accent-fg);
+
+  --font-sans: 'General Sans', 'Inter var', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Font choice, set via `data-font` on <html> from the settings page. */
+[data-font='general-sans'] {
+  --font-sans: 'General Sans', 'Inter var', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+[data-font='inter'] {
+  --font-sans: 'Inter var', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+[data-font='system'] {
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+[data-font='serif'] {
+  --font-sans: ui-serif, Georgia, 'Times New Roman', serif;
+}
+[data-font='mono'] {
+  --font-sans: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', Menlo, monospace;
 }
 
 .dark {
@@ -124,7 +143,7 @@
   --shadow-pop: var(--shadow-pop);
   --shadow-flash: var(--shadow-flash);
 
-  --font-sans: 'Inter var', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: var(--font-sans);
 
   --font-size-display-1: clamp(2.75rem, 1.6rem + 6vw, 7rem);
   --font-size-display-2: clamp(2rem, 1.2rem + 4vw, 4.5rem);
