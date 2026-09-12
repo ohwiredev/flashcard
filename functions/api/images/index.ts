@@ -13,6 +13,7 @@ const ALLOWED_TYPES: Record<string, string> = {
 
 export const onRequestPost: PagesFunction<Env, string, AppData> = async ({ request, env, data }) => {
   if (!data.user) return errorResponse('Not signed in.', 401)
+  if (!env.UPLOADTHING_TOKEN) return errorResponse('Image uploads are not configured on this deployment.', 503)
 
   const contentType = request.headers.get('content-type') ?? ''
   const extension = ALLOWED_TYPES[contentType]

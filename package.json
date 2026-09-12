@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run typecheck && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit",
+    "typecheck": "tsc -b --noEmit && tsc -p functions/tsconfig.json --noEmit",
     "dev:watch": "vite build --watch",
     "pages:dev": "wrangler pages dev dist",
     "pages:deploy": "npm run build && wrangler pages deploy dist --project-name flashcard",
