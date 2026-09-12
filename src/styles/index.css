@@ -162,115 +162,118 @@ body {
   scrollbar-width: thin;
 }
 
-.text-display-1 {
-  font-size: var(--font-size-display-1);
-  line-height: 0.95;
-  letter-spacing: -0.03em;
-  font-weight: 600;
-}
-.text-display-2 {
-  font-size: var(--font-size-display-2);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-weight: 600;
-}
-.text-title {
-  font-size: var(--font-size-title);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  font-weight: 600;
-  text-wrap: balance;
-}
-.text-body-lg {
-  font-size: var(--font-size-body-lg);
-  line-height: 1.5;
-}
-.text-caption {
-  font-size: var(--font-size-caption);
-  line-height: 1.4;
-  letter-spacing: 0.01em;
-}
-.text-eyebrow {
-  font-size: 0.6875rem;
-  line-height: 1.2;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-.nums-tabular {
-  font-variant-numeric: tabular-nums;
-}
+/* These live in the components layer so Tailwind utilities always win over them.
+   Left unlayered, a declaration like surface-sheen's `position` would beat a utility
+   such as `fixed` and break positioning. */
+@layer components {
+  .text-display-1 {
+    font-size: var(--font-size-display-1);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+  }
+  .text-display-2 {
+    font-size: var(--font-size-display-2);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+  .text-title {
+    font-size: var(--font-size-title);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+  .text-body-lg {
+    font-size: var(--font-size-body-lg);
+    line-height: 1.5;
+  }
+  .text-caption {
+    font-size: var(--font-size-caption);
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+  }
+  .text-eyebrow {
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .nums-tabular {
+    font-variant-numeric: tabular-nums;
+  }
 
-/* One consistent keyboard focus treatment for every interactive element. */
-.focus-ring {
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-  transition: outline-color var(--duration-sm) var(--ease-out);
-}
-.focus-ring:focus-visible {
-  outline-color: var(--color-accent);
-}
+  /* One consistent keyboard focus treatment for every interactive element. */
+  .focus-ring {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transition: outline-color var(--duration-sm) var(--ease-out);
+  }
+  .focus-ring:focus-visible {
+    outline-color: var(--color-accent);
+  }
 
-.pressable {
-  transition:
-    transform var(--duration-press) var(--ease-out),
-    box-shadow var(--duration-md) var(--ease-out),
-    background-color var(--duration-sm) var(--ease-out),
-    border-color var(--duration-sm) var(--ease-out),
-    color var(--duration-sm) var(--ease-out);
-}
-.pressable:active {
-  transform: scale(0.97);
-}
-@media (hover: hover) and (pointer: fine) {
-  .pressable-hover:hover {
-    transform: translateY(-1px);
+  .pressable {
+    transition:
+      transform var(--duration-press) var(--ease-out),
+      box-shadow var(--duration-md) var(--ease-out),
+      background-color var(--duration-sm) var(--ease-out),
+      border-color var(--duration-sm) var(--ease-out),
+      filter var(--duration-sm) var(--ease-out),
+      color var(--duration-sm) var(--ease-out);
+  }
+  .pressable:active {
+    transform: scale(0.97);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pressable-hover:hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  /* Hairline sheen along the top edge of an elevated surface — reads as a lit edge
+     in dark mode and a soft highlight in light mode. Assumes the element is already
+     positioned; it deliberately sets no `position` of its own. */
+  .surface-sheen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding-top: 1px;
+    background: linear-gradient(to bottom, oklch(100% 0 0 / 0.7), transparent);
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+    pointer-events: none;
+  }
+  .dark .surface-sheen::before {
+    background: linear-gradient(to bottom, oklch(100% 0 0 / 0.1), transparent);
+  }
+
+  /* Card flip — rotation and reduced-motion crossfade are driven by GSAP (see
+     Flashcard.tsx); this CSS only sets up the static 3D structure GSAP animates within. */
+  .flip-card {
+    perspective: 1200px;
+  }
+  .flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+  }
+  .flip-card-front,
+  .flip-card-back {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .flip-card-back {
+    transform: rotateY(180deg);
   }
 }
-
-/* Hairline sheen along the top edge of an elevated surface — reads as a lit edge
-   in dark mode and a soft highlight in light mode. */
-.surface-sheen {
-  position: relative;
-}
-.surface-sheen::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding-top: 1px;
-  background: linear-gradient(to bottom, oklch(100% 0 0 / 0.7), transparent);
-  mask:
-    linear-gradient(#000 0 0) content-box exclude,
-    linear-gradient(#000 0 0);
-  pointer-events: none;
-}
-.dark .surface-sheen::before {
-  background: linear-gradient(to bottom, oklch(100% 0 0 / 0.1), transparent);
-}
-
-/* Card flip — rotation and reduced-motion crossfade are driven by GSAP (see Flashcard.tsx);
-   this CSS only sets up the static 3D structure GSAP animates within. */
-.flip-card {
-  perspective: 1200px;
-}
-.flip-card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-}
-.flip-card-front,
-.flip-card-back {
-  position: absolute;
-  inset: 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-.flip-card-back {
-  transform: rotateY(180deg);
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

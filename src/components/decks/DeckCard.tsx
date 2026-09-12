@@ -51,14 +51,10 @@ export function DeckCard({
   return (
     <div
       data-accent={deck.accent}
-      className="group surface-sheen relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-bg-elevated shadow-card transition-[transform,box-shadow,border-color] duration-[var(--duration-md)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-border-strong hover:shadow-card-hover"
+      className="surface-sheen relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-bg-elevated shadow-card transition-[transform,box-shadow,border-color] duration-[var(--duration-md)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-border-strong hover:shadow-card-hover"
     >
-      {/* Deck colour: a full-width hairline at the top plus a wash that warms on hover. */}
+      {/* Deck colour: a full-width hairline across the top edge. */}
       <span aria-hidden className="h-1 w-full shrink-0 bg-deck-accent" />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-deck-accent/8 to-transparent opacity-70 transition-opacity duration-[var(--duration-md)] group-hover:opacity-100"
-      />
 
       <div className="relative flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-2">
@@ -98,7 +94,7 @@ export function DeckCard({
           {cardCount > 0 ? (
             <Link
               to={`/decks/${deck.id}/review`}
-              className="focus-ring pressable inline-flex items-center gap-1.5 rounded-full bg-deck-accent px-3.5 py-1.5 text-xs font-semibold text-deck-accent-fg shadow-card transition-[filter,box-shadow] hover:brightness-110 hover:shadow-card-hover"
+              className="focus-ring pressable inline-flex items-center gap-1.5 rounded-full bg-deck-accent px-3.5 py-1.5 text-xs font-semibold text-deck-accent-fg shadow-card hover:brightness-110 hover:shadow-card-hover"
             >
               <PlayIcon />
               Review

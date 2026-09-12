@@ -52,7 +52,7 @@ export function ReviewComplete({
   return (
     <div
       ref={rootRef}
-      className="surface-sheen mx-auto flex w-full max-w-md flex-col items-center rounded-2xl border border-border bg-bg-elevated px-6 py-12 text-center shadow-card sm:px-10"
+      className="surface-sheen relative mx-auto flex w-full max-w-md flex-col items-center rounded-2xl border border-border bg-bg-elevated px-6 py-12 text-center shadow-card sm:px-10"
     >
       <CheckBadge />
       <h2 className="text-title mt-6 text-fg">Nice work.</h2>
