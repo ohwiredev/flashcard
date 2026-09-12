@@ -44,7 +44,9 @@ export function CardListItem({
         />
       ) : null}
       <div className="grid min-w-0 flex-1 items-center gap-x-4 gap-y-0.5 sm:grid-cols-2">
-        <p className="truncate text-sm font-medium text-fg">{card.front}</p>
+        <p className="truncate text-sm font-medium text-fg">
+          {card.front || <span className="text-fg-subtle italic">Image only</span>}
+        </p>
         <p className="truncate text-sm text-fg-muted">{card.back}</p>
       </div>
       <div className="flex shrink-0 gap-1">

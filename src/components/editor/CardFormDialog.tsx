@@ -30,9 +30,14 @@ export function CardFormDialog({
     }
   }, [open, card])
 
+  // An image on the question side carries the prompt on its own, so the front text
+  // only has to be filled in when there is no front image.
+  const frontFilled = Boolean(front.trim() || frontImage)
+  const canSubmit = frontFilled && Boolean(back.trim())
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!front.trim() || !back.trim()) return
+    if (!canSubmit) return
     onSubmit(front.trim(), back.trim(), frontImage, backImage)
     onOpenChange(false)
   }
@@ -41,11 +46,14 @@ export function CardFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange} title={card ? 'Edit card' : 'Add card'}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label className="text-caption mb-1.5 block font-medium text-fg-muted">Front</label>
+          <label className="text-caption mb-1.5 block font-medium text-fg-muted">
+            Front
+            {frontImage ? <span className="ml-1.5 text-fg-subtle">optional with an image</span> : null}
+          </label>
           <Textarea
             value={front}
             onChange={(event) => setFront(event.target.value)}
-            placeholder="What you'll be asked"
+            placeholder={frontImage ? 'Add a prompt, or leave the image to speak for itself' : "What you'll be asked"}
             autoFocus
           />
           <div className="mt-2">
@@ -67,7 +75,7 @@ export function CardFormDialog({
           <Button type="button" intent="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!front.trim() || !back.trim()}>
+          <Button type="submit" disabled={!canSubmit}>
             {card ? 'Save' : 'Add card'}
           </Button>
         </div>

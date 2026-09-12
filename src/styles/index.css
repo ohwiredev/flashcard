@@ -35,24 +35,21 @@
   --deck-accent: var(--color-accent);
   --deck-accent-fg: var(--color-accent-fg);
 
-  --font-sans: 'General Sans', 'Inter var', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Font choice, set via `data-font` on <html> from the settings page. */
-[data-font='general-sans'] {
-  --font-sans: 'General Sans', 'Inter var', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-[data-font='inter'] {
-  --font-sans: 'Inter var', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
 [data-font='system'] {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
-[data-font='serif'] {
-  --font-sans: ui-serif, Georgia, 'Times New Roman', serif;
+[data-font='general-sans'] {
+  --font-sans: 'General Sans', system-ui, sans-serif;
 }
-[data-font='mono'] {
-  --font-sans: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', Menlo, monospace;
+[data-font='space-grotesk'] {
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+}
+[data-font='jetbrains-mono-nerd'] {
+  --font-sans: 'JetBrainsMono Nerd Font', 'JetBrains Mono', ui-monospace, monospace;
 }
 
 .dark {

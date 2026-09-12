@@ -15,7 +15,7 @@ export function CardPeek({ card }: { card: Card }) {
             className="max-h-[28vh] w-auto max-w-full rounded-xl object-contain"
           />
         ) : null}
-        <p className="text-title text-fg-subtle">{card.front}</p>
+        {card.front ? <p className="text-title text-fg-subtle">{card.front}</p> : null}
       </div>
     </div>
   )
