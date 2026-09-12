@@ -4,6 +4,6 @@ export function json(data: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(data), { ...init, headers })
 }
 
-export function errorResponse(message: string, status = 400): Response {
-  return json({ error: message }, { status })
+export function errorResponse(message: string, status = 400, headers?: HeadersInit): Response {
+  return json({ error: message }, { status, headers })
 }
