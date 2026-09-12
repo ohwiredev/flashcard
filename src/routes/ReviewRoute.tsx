@@ -1,0 +1,143 @@
+import { useEffect, useRef, useState } from 'react'
+import { Navigate, useNavigate, useParams } from 'react-router'
+import { CardPeek } from '../components/review/CardPeek'
+import { Flashcard, type FlashcardHandle } from '../components/review/Flashcard'
+import { KeyboardShortcutsDialog } from '../components/review/KeyboardShortcutsDialog'
+import { ReviewComplete } from '../components/review/ReviewComplete'
+import { ReviewControls } from '../components/review/ReviewControls'
+import { ReviewProgress } from '../components/review/ReviewProgress'
+import { useDeck } from '../hooks/useDeck'
+import type { Deck } from '../lib/types'
+import { shuffle } from '../lib/utils'
+
+export function ReviewRoute() {
+  const { deckId } = useParams()
+  const deck = useDeck(deckId)
+  const navigate = useNavigate()
+
+  if (!deck) {
+    return <Navigate to="/" replace />
+  }
+
+  if (deck.cards.length === 0) {
+    return <Navigate to={`/decks/${deck.id}`} replace />
+  }
+
+  // Keyed by deck.id so navigating directly between two decks' review pages
+  // (no route remount otherwise) starts a fresh session instead of reusing stale state.
+  return <ReviewSession key={deck.id} deck={deck} onExit={() => navigate(`/decks/${deck.id}`)} />
+}
+
+function ReviewSession({ deck, onExit }: { deck: Deck; onExit: () => void }) {
+  const [order, setOrder] = useState(deck.cards)
+  const [index, setIndex] = useState(0)
+  const [isFlipped, setIsFlipped] = useState(false)
+  const [completed, setCompleted] = useState(false)
+  const flashcardRef = useRef<FlashcardHandle>(null)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+
+  const canPrev = index > 0
+  const isLast = index >= order.length - 1
+
+  function handleFlip() {
+    setIsFlipped((flipped) => !flipped)
+  }
+
+  function handleNext() {
+    if (!isLast) {
+      setIndex((i) => i + 1)
+      setIsFlipped(false)
+    } else {
+      setCompleted(true)
+    }
+  }
+
+  function handlePrev() {
+    if (canPrev) {
+      setIndex((i) => i - 1)
+      setIsFlipped(false)
+    }
+  }
+
+  function handleSwipe(direction: 'left' | 'right') {
+    if (direction === 'right') {
+      handleNext()
+    } else {
+      handlePrev()
+    }
+  }
+
+  function handleShuffle() {
+    setOrder((current) => shuffle(current))
+    setIndex(0)
+    setIsFlipped(false)
+  }
+
+  function handleRestart() {
+    setIndex(0)
+    setIsFlipped(false)
+    setCompleted(false)
+  }
+
+  // Space/Enter-to-flip is handled by the Flashcard itself (it keeps keyboard focus).
+  // Arrow keys navigate regardless of focus (page-level, not card-level), and trigger the
+  // same fly-off swipe animation as a drag release rather than an instant jump.
+  useEffect(() => {
+    if (completed) return
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.code === 'ArrowLeft') {
+        flashcardRef.current?.swipe('left')
+      } else if (event.code === 'ArrowRight') {
+        flashcardRef.current?.swipe('right')
+      } else if (event.key === '?') {
+        setShortcutsOpen((open) => !open)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
+
+  const currentCard = order[index]
+  const peekCard = order[index + 1]
+
+  return (
+    <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-10 sm:px-6">
+      {completed ? (
+        <ReviewComplete deckName={deck.name} onRestart={handleRestart} onBack={onExit} />
+      ) : (
+        <>
+          <ReviewProgress
+            current={index + 1}
+            total={order.length}
+            onShowShortcuts={() => setShortcutsOpen(true)}
+          />
+          <p className="mt-3 text-caption text-fg-muted">
+            Swipe (or press ← →) — right for next, left to go back.
+          </p>
+          <div className="relative mt-6 w-full">
+            {peekCard ? <CardPeek card={peekCard} /> : null}
+            <Flashcard
+              ref={flashcardRef}
+              card={currentCard}
+              isFlipped={isFlipped}
+              onFlip={handleFlip}
+              onSwipe={handleSwipe}
+              canSwipeBack={canPrev}
+            />
+          </div>
+          <ReviewControls
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onFlip={handleFlip}
+            onShuffle={handleShuffle}
+            canPrev={canPrev}
+            isLast={isLast}
+          />
+        </>
+      )}
+      <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+    </div>
+  )
+}
