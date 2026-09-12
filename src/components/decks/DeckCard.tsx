@@ -53,9 +53,6 @@ export function DeckCard({
       data-accent={deck.accent}
       className="surface-sheen relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-bg-elevated shadow-card transition-[transform,box-shadow,border-color] duration-[var(--duration-md)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-border-strong hover:shadow-card-hover"
     >
-      {/* Deck colour: a full-width hairline across the top edge. */}
-      <span aria-hidden className="h-1 w-full shrink-0 bg-deck-accent" />
-
       <div className="relative flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-2">
           <span className="text-eyebrow inline-flex items-center gap-1.5 rounded-full bg-deck-accent/10 px-2.5 py-1 text-deck-accent">
