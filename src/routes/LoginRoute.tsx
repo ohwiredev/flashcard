@@ -4,6 +4,42 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { useAuthStore } from '../lib/authStore'
 
+function EyeIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4.5 w-4.5"
+    >
+      <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+function EyeOffIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4.5 w-4.5"
+    >
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10.5 7 10.5 7a13.16 13.16 0 0 1-2.16 3.19" />
+      <path d="M6.53 6.53C3.47 8.4 1.5 11.5 1.5 11.5s3.5 7 10.5 7a9.8 9.8 0 0 0 5.02-1.35" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <path d="M2 2l20 20" />
+    </svg>
+  )
+}
+
 export function LoginRoute() {
   const status = useAuthStore((state) => state.status)
   const login = useAuthStore((state) => state.login)
@@ -12,6 +48,7 @@ export function LoginRoute() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   if (status === 'authenticated') {
@@ -50,13 +87,24 @@ export function LoginRoute() {
           </div>
           <div>
             <label className="text-caption mb-1.5 block font-medium text-fg-muted">Password</label>
-            <Input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="pr-10"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="focus-ring pressable absolute top-1/2 right-1 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-fg-muted hover:text-fg"
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
           {error ? <p className="text-caption text-red-600">{error}</p> : null}
           <Button type="submit" disabled={submitting} className="mt-2">

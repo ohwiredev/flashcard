@@ -1,9 +1,10 @@
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { useEffect, useRef, useState } from 'react'
-import { Link, Outlet, useLocation, useParams } from 'react-router'
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { useDeck } from '../../hooks/useDeck'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
+import { useAuthStore } from '../../lib/authStore'
 import { cn } from '../../lib/utils'
 import { ThemeToggle } from '../theme/ThemeToggle'
 import { Toast } from '../ui/Toast'
@@ -27,6 +28,24 @@ function SettingsIcon() {
   )
 }
 
+function LogoutIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4.5 w-4.5"
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="M16 17l5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  )
+}
+
 function Separator() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-4 w-4 shrink-0 text-fg-subtle">
@@ -45,10 +64,17 @@ export function AppShell() {
   const { deckId } = useParams()
   const deck = useDeck(deckId)
   const location = useLocation()
+  const navigate = useNavigate()
+  const logout = useAuthStore((state) => state.logout)
   const isReview = location.pathname.endsWith('/review')
   const reduced = useReducedMotion()
   const mainRef = useRef<HTMLElement>(null)
   const [scrolled, setScrolled] = useState(false)
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login')
+  }
 
   const [alreadyEntered] = useState(
     () => typeof window !== 'undefined' && sessionStorage.getItem(SESSION_KEY) === 'true',
@@ -131,6 +157,14 @@ export function AppShell() {
               <SettingsIcon />
             </Link>
             <ThemeToggle />
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sign out"
+              className="focus-ring pressable flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-fg-muted hover:border-border hover:bg-bg-elevated hover:text-fg"
+            >
+              <LogoutIcon />
+            </button>
           </div>
         </div>
       </header>
