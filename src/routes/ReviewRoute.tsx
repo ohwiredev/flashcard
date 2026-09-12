@@ -103,9 +103,17 @@ function ReviewSession({ deck, onExit }: { deck: Deck; onExit: () => void }) {
   const peekCard = order[index + 1]
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-10 sm:px-6">
+    <div
+      data-accent={deck.accent}
+      className="mx-auto flex max-w-3xl flex-col items-center px-4 py-10 sm:px-6 sm:py-14"
+    >
       {completed ? (
-        <ReviewComplete deckName={deck.name} onRestart={handleRestart} onBack={onExit} />
+        <ReviewComplete
+          deckName={deck.name}
+          cardCount={order.length}
+          onRestart={handleRestart}
+          onBack={onExit}
+        />
       ) : (
         <>
           <ReviewProgress
@@ -113,10 +121,7 @@ function ReviewSession({ deck, onExit }: { deck: Deck; onExit: () => void }) {
             total={order.length}
             onShowShortcuts={() => setShortcutsOpen(true)}
           />
-          <p className="mt-3 text-caption text-fg-muted">
-            Swipe (or press ← →) — right for next, left to go back.
-          </p>
-          <div className="relative mt-6 w-full">
+          <div className="relative mt-8 w-full">
             {peekCard ? <CardPeek card={peekCard} /> : null}
             <Flashcard
               ref={flashcardRef}
@@ -127,6 +132,18 @@ function ReviewSession({ deck, onExit }: { deck: Deck; onExit: () => void }) {
               canSwipeBack={canPrev}
             />
           </div>
+          <p className="text-caption mt-5 flex flex-wrap items-center justify-center gap-1.5 text-fg-subtle">
+            <span>Tap to flip</span>
+            <span aria-hidden>·</span>
+            <span>Swipe or press</span>
+            <kbd className="rounded-md border border-border bg-bg-elevated px-1.5 py-0.5 font-sans text-[0.6875rem] font-medium text-fg-muted shadow-card">
+              ←
+            </kbd>
+            <kbd className="rounded-md border border-border bg-bg-elevated px-1.5 py-0.5 font-sans text-[0.6875rem] font-medium text-fg-muted shadow-card">
+              →
+            </kbd>
+            <span>to move</span>
+          </p>
           <ReviewControls
             onPrev={handlePrev}
             onNext={handleNext}

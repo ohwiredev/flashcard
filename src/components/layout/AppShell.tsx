@@ -4,9 +4,43 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation, useParams } from 'react-router'
 import { useDeck } from '../../hooks/useDeck'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
+import { cn } from '../../lib/utils'
 import { ThemeToggle } from '../theme/ThemeToggle'
 
 const SESSION_KEY = 'appShellEntered'
+
+function LogoMark() {
+  return (
+    <span className="relative flex h-7 w-7 items-center justify-center rounded-[0.5rem] bg-accent text-accent-fg shadow-card">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-4 w-4">
+        <rect
+          x="4.5"
+          y="6.5"
+          width="15"
+          height="11"
+          rx="2.5"
+          stroke="currentColor"
+          strokeWidth={2}
+        />
+        <path d="M8.5 4.5h7" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+      </svg>
+    </span>
+  )
+}
+
+function Separator() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-4 w-4 shrink-0 text-fg-subtle">
+      <path
+        d="M10 6l6 6-6 6"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 
 export function AppShell() {
   const { deckId } = useParams()
@@ -15,6 +49,7 @@ export function AppShell() {
   const isReview = location.pathname.endsWith('/review')
   const reduced = useReducedMotion()
   const mainRef = useRef<HTMLElement>(null)
+  const [scrolled, setScrolled] = useState(false)
 
   const [alreadyEntered] = useState(
     () => typeof window !== 'undefined' && sessionStorage.getItem(SESSION_KEY) === 'true',
@@ -22,6 +57,16 @@ export function AppShell() {
 
   useEffect(() => {
     sessionStorage.setItem(SESSION_KEY, 'true')
+  }, [])
+
+  // The header sits flush with the page until you scroll, then earns its edge and shadow.
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 4)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   useGSAP(
@@ -37,31 +82,52 @@ export function AppShell() {
   )
 
   return (
-    <div className="min-h-screen bg-bg text-fg">
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-surface-translucent backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2 text-sm">
-            <Link to="/" className="pressable font-semibold text-fg">
-              Flashcard
+    <div className="flex min-h-screen flex-col bg-bg text-fg">
+      <header
+        className={cn(
+          'sticky top-0 z-30 bg-surface-translucent backdrop-blur-xl transition-[box-shadow,border-color] duration-[var(--duration-md)] ease-[var(--ease-out)]',
+          scrolled ? 'border-b border-border shadow-card' : 'border-b border-transparent',
+        )}
+      >
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
+          <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
+            <Link
+              to="/"
+              className="focus-ring pressable flex shrink-0 items-center gap-2 rounded-lg font-semibold tracking-tight text-fg"
+            >
+              <LogoMark />
+              <span className="hidden sm:inline">Flashcard</span>
             </Link>
             {deck ? (
               <>
-                <span className="text-fg-muted">/</span>
+                <Separator />
                 {isReview ? (
-                  <Link to={`/decks/${deck.id}`} className="pressable truncate text-fg-muted hover:text-fg">
+                  <Link
+                    to={`/decks/${deck.id}`}
+                    className="focus-ring truncate rounded-lg text-fg-muted transition-colors hover:text-fg"
+                  >
                     {deck.name}
                   </Link>
                 ) : (
-                  <span className="truncate text-fg-muted">{deck.name}</span>
+                  <span className="truncate font-medium text-fg" aria-current="page">
+                    {deck.name}
+                  </span>
                 )}
-                {isReview ? <span className="text-fg-muted">/ Review</span> : null}
+                {isReview ? (
+                  <>
+                    <Separator />
+                    <span className="shrink-0 font-medium text-fg" aria-current="page">
+                      Review
+                    </span>
+                  </>
+                ) : null}
               </>
             ) : null}
-          </div>
+          </nav>
           <ThemeToggle />
         </div>
       </header>
-      <main ref={mainRef}>
+      <main ref={mainRef} className="flex-1">
         <Outlet />
       </main>
     </div>

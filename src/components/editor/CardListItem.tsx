@@ -22,15 +22,20 @@ function TrashIcon() {
 
 export function CardListItem({
   card,
+  index,
   onEdit,
   onDelete,
 }: {
   card: Card
+  index: number
   onEdit: () => void
   onDelete: () => void
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-bg-elevated px-4 py-3">
+    <div className="group flex items-center gap-4 rounded-xl border border-border bg-bg-elevated px-4 py-3 shadow-card transition-[border-color,box-shadow] duration-[var(--duration-md)] ease-[var(--ease-out)] hover:border-border-strong hover:shadow-card-hover">
+      <span className="nums-tabular w-5 shrink-0 text-center text-xs font-medium text-fg-subtle">
+        {index + 1}
+      </span>
       {card.frontImage ? (
         <img
           src={card.frontImage}
@@ -38,24 +43,24 @@ export function CardListItem({
           className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover"
         />
       ) : null}
-      <div className="grid min-w-0 flex-1 grid-cols-2 gap-4">
-        <p className="truncate text-sm text-fg">{card.front}</p>
+      <div className="grid min-w-0 flex-1 items-center gap-x-4 gap-y-0.5 sm:grid-cols-2">
+        <p className="truncate text-sm font-medium text-fg">{card.front}</p>
         <p className="truncate text-sm text-fg-muted">{card.back}</p>
       </div>
       <div className="flex shrink-0 gap-1">
         <button
           type="button"
           onClick={onEdit}
-          aria-label="Edit card"
-          className="pressable flex h-8 w-8 items-center justify-center rounded-full text-fg-muted hover:bg-fg/5"
+          aria-label={`Edit card ${index + 1}`}
+          className="focus-ring pressable flex h-8 w-8 items-center justify-center rounded-full text-fg-muted hover:bg-fg/5 hover:text-fg"
         >
           <EditIcon />
         </button>
         <button
           type="button"
           onClick={onDelete}
-          aria-label="Delete card"
-          className="pressable flex h-8 w-8 items-center justify-center rounded-full text-fg-muted hover:bg-red-500/10 hover:text-red-600"
+          aria-label={`Delete card ${index + 1}`}
+          className="focus-ring pressable flex h-8 w-8 items-center justify-center rounded-full text-fg-muted hover:bg-red-500/10 hover:text-red-600"
         >
           <TrashIcon />
         </button>

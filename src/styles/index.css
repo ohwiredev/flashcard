@@ -3,14 +3,23 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --color-bg: oklch(99% 0 0);
+  --color-bg: oklch(98.5% 0.002 260);
+  --color-bg-sunken: oklch(96.5% 0.004 260);
   --color-bg-elevated: oklch(100% 0 0);
-  --color-fg: oklch(18% 0 0);
-  --color-fg-muted: oklch(45% 0 0);
+  --color-fg: oklch(18% 0.01 260);
+  --color-fg-muted: oklch(48% 0.012 260);
+  --color-fg-subtle: oklch(62% 0.01 260);
   --color-accent: oklch(55% 0.18 260);
   --color-accent-fg: oklch(99% 0 0);
-  --color-border: oklch(90% 0 0);
-  --color-surface-translucent: oklch(100% 0 0 / 0.6);
+  --color-accent-soft: oklch(55% 0.18 260 / 0.1);
+  --color-border: oklch(91% 0.004 260);
+  --color-border-strong: oklch(85% 0.006 260);
+  --color-surface-translucent: oklch(100% 0 0 / 0.72);
+
+  --shadow-card: 0 1px 2px oklch(20% 0.02 260 / 0.05), 0 1px 3px oklch(20% 0.02 260 / 0.04);
+  --shadow-card-hover: 0 2px 4px oklch(20% 0.02 260 / 0.05), 0 12px 24px -8px oklch(20% 0.02 260 / 0.14);
+  --shadow-pop: 0 4px 8px oklch(20% 0.02 260 / 0.06), 0 24px 48px -12px oklch(20% 0.02 260 / 0.22);
+  --shadow-flash: 0 2px 6px oklch(20% 0.02 260 / 0.05), 0 24px 48px -16px oklch(20% 0.02 260 / 0.2);
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -21,28 +30,101 @@
   --duration-lg: 320ms;
 
   --space-section: clamp(4rem, 3rem + 8vw, 10rem);
+
+  /* Global fallback so deck-accent utilities are valid outside a [data-accent] container. */
+  --deck-accent: var(--color-accent);
+  --deck-accent-fg: var(--color-accent-fg);
 }
 
 .dark {
-  --color-bg: oklch(14% 0 0);
-  --color-bg-elevated: oklch(19% 0 0);
-  --color-fg: oklch(96% 0 0);
-  --color-fg-muted: oklch(68% 0 0);
+  --color-bg: oklch(14% 0.008 260);
+  --color-bg-sunken: oklch(11.5% 0.008 260);
+  --color-bg-elevated: oklch(19% 0.009 260);
+  --color-fg: oklch(96% 0.003 260);
+  --color-fg-muted: oklch(70% 0.012 260);
+  --color-fg-subtle: oklch(58% 0.012 260);
   --color-accent: oklch(70% 0.16 260);
-  --color-accent-fg: oklch(12% 0 0);
-  --color-border: oklch(30% 0 0);
-  --color-surface-translucent: oklch(19% 0 0 / 0.55);
+  --color-accent-fg: oklch(15% 0.02 260);
+  --color-accent-soft: oklch(70% 0.16 260 / 0.16);
+  --color-border: oklch(28% 0.008 260);
+  --color-border-strong: oklch(36% 0.01 260);
+  --color-surface-translucent: oklch(16% 0.008 260 / 0.72);
+
+  --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.2);
+  --shadow-card-hover: 0 2px 4px oklch(0% 0 0 / 0.3), 0 12px 28px -8px oklch(0% 0 0 / 0.5);
+  --shadow-pop: 0 4px 8px oklch(0% 0 0 / 0.35), 0 24px 56px -12px oklch(0% 0 0 / 0.65);
+  --shadow-flash: 0 2px 6px oklch(0% 0 0 / 0.3), 0 28px 56px -16px oklch(0% 0 0 / 0.6);
+}
+
+/* Per-deck accent. Set `data-accent` on any container to retint the accent tokens
+   below it, so a deck's colour carries from its card through to the review screen. */
+[data-accent] {
+  --deck-accent: var(--color-accent);
+  --deck-accent-fg: var(--color-accent-fg);
+}
+[data-accent='blue'] {
+  --deck-accent: oklch(57% 0.17 258);
+  --deck-accent-fg: oklch(99% 0 0);
+}
+[data-accent='violet'] {
+  --deck-accent: oklch(56% 0.2 296);
+  --deck-accent-fg: oklch(99% 0 0);
+}
+[data-accent='amber'] {
+  --deck-accent: oklch(70% 0.15 65);
+  --deck-accent-fg: oklch(22% 0.04 65);
+}
+[data-accent='teal'] {
+  --deck-accent: oklch(58% 0.11 190);
+  --deck-accent-fg: oklch(99% 0 0);
+}
+[data-accent='rose'] {
+  --deck-accent: oklch(60% 0.18 15);
+  --deck-accent-fg: oklch(99% 0 0);
+}
+.dark [data-accent='blue'] {
+  --deck-accent: oklch(70% 0.14 258);
+  --deck-accent-fg: oklch(15% 0.03 258);
+}
+.dark [data-accent='violet'] {
+  --deck-accent: oklch(71% 0.15 296);
+  --deck-accent-fg: oklch(16% 0.04 296);
+}
+.dark [data-accent='amber'] {
+  --deck-accent: oklch(78% 0.14 70);
+  --deck-accent-fg: oklch(20% 0.04 70);
+}
+.dark [data-accent='teal'] {
+  --deck-accent: oklch(72% 0.1 190);
+  --deck-accent-fg: oklch(16% 0.03 190);
+}
+.dark [data-accent='rose'] {
+  --deck-accent: oklch(72% 0.14 15);
+  --deck-accent-fg: oklch(16% 0.04 15);
 }
 
 @theme inline {
   --color-bg: var(--color-bg);
+  --color-bg-sunken: var(--color-bg-sunken);
   --color-bg-elevated: var(--color-bg-elevated);
   --color-fg: var(--color-fg);
   --color-fg-muted: var(--color-fg-muted);
+  --color-fg-subtle: var(--color-fg-subtle);
   --color-accent: var(--color-accent);
   --color-accent-fg: var(--color-accent-fg);
+  --color-accent-soft: var(--color-accent-soft);
   --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
   --color-surface-translucent: var(--color-surface-translucent);
+  --color-deck-accent: var(--deck-accent);
+  --color-deck-accent-fg: var(--deck-accent-fg);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-card-hover: var(--shadow-card-hover);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-flash: var(--shadow-flash);
+
+  --font-sans: 'Inter var', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
   --font-size-display-1: clamp(2.75rem, 1.6rem + 6vw, 7rem);
   --font-size-display-2: clamp(2rem, 1.2rem + 4vw, 4.5rem);
@@ -61,8 +143,23 @@ html.dark {
 body {
   background: var(--color-bg);
   color: var(--color-fg);
-  font: 100%/1.5 system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 100%;
+  line-height: 1.5;
+  font-feature-settings: 'cv05' 1, 'ss03' 1;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+}
+
+* {
+  scrollbar-color: var(--color-border-strong) transparent;
+  scrollbar-width: thin;
 }
 
 .text-display-1 {
@@ -80,8 +177,9 @@ body {
 .text-title {
   font-size: var(--font-size-title);
   line-height: 1.1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   font-weight: 600;
+  text-wrap: balance;
 }
 .text-body-lg {
   font-size: var(--font-size-body-lg);
@@ -92,9 +190,34 @@ body {
   line-height: 1.4;
   letter-spacing: 0.01em;
 }
+.text-eyebrow {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.nums-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* One consistent keyboard focus treatment for every interactive element. */
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color var(--duration-sm) var(--ease-out);
+}
+.focus-ring:focus-visible {
+  outline-color: var(--color-accent);
+}
 
 .pressable {
-  transition: transform var(--duration-press) var(--ease-out);
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    box-shadow var(--duration-md) var(--ease-out),
+    background-color var(--duration-sm) var(--ease-out),
+    border-color var(--duration-sm) var(--ease-out),
+    color var(--duration-sm) var(--ease-out);
 }
 .pressable:active {
   transform: scale(0.97);
@@ -103,6 +226,27 @@ body {
   .pressable-hover:hover {
     transform: translateY(-1px);
   }
+}
+
+/* Hairline sheen along the top edge of an elevated surface — reads as a lit edge
+   in dark mode and a soft highlight in light mode. */
+.surface-sheen {
+  position: relative;
+}
+.surface-sheen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding-top: 1px;
+  background: linear-gradient(to bottom, oklch(100% 0 0 / 0.7), transparent);
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+.dark .surface-sheen::before {
+  background: linear-gradient(to bottom, oklch(100% 0 0 / 0.1), transparent);
 }
 
 /* Card flip — rotation and reduced-motion crossfade are driven by GSAP (see Flashcard.tsx);

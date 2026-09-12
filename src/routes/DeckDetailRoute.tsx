@@ -52,7 +52,7 @@ export function DeckDetailRoute() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
       <DeckHeader
         deck={deck}
         onEdit={() => setEditDeckOpen(true)}
@@ -60,10 +60,20 @@ export function DeckDetailRoute() {
         onStartReview={() => navigate(`/decks/${deck.id}/review`)}
       />
 
-      <div className="mt-10 flex items-center justify-between">
-        <h2 className="text-caption font-semibold text-fg-muted uppercase">Cards</h2>
+      <div className="mt-12 flex items-center justify-between gap-3">
+        <h2 className="text-eyebrow text-fg-subtle">Cards</h2>
         <Button size="sm" intent="secondary" onClick={openAddCard}>
-          Add Card
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            className="h-3.5 w-3.5"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add card
         </Button>
       </div>
       <div className="mt-4">

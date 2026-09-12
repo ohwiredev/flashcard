@@ -9,7 +9,7 @@ export function ProgressBar({ value, max }: { value: number; max: number }) {
       className="h-1.5 w-full overflow-hidden rounded-full bg-border"
     >
       <div
-        className="h-full rounded-full bg-accent transition-[width] duration-[var(--duration-md)] ease-[var(--ease-out)]"
+        className="h-full rounded-full bg-gradient-to-r from-deck-accent/70 to-deck-accent transition-[width] duration-[var(--duration-lg)] ease-[var(--ease-out)]"
         style={{ width: `${percent}%` }}
       />
     </div>

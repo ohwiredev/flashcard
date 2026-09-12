@@ -235,30 +235,37 @@ export const Flashcard = forwardRef<
         isFlipped ? 'Showing answer. Press space to show question.' : 'Showing question. Press space to show answer.'
       }
       className={cn(
-        'flip-card relative z-10 mx-auto block aspect-[3/2] w-full max-w-xl cursor-grab touch-none text-left outline-none select-none active:cursor-grabbing',
-        'focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-3xl',
+        'flip-card relative z-10 mx-auto block aspect-[3/2] w-full max-w-xl cursor-grab touch-none rounded-3xl text-left outline-none select-none active:cursor-grabbing',
+        'focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-4 focus-visible:ring-offset-bg',
       )}
     >
       <div
         ref={nextStampRef}
         aria-hidden
-        className="pointer-events-none absolute top-6 right-6 z-20 -rotate-12 rounded-lg border-2 border-accent px-3 py-1 text-sm font-bold tracking-wide text-accent opacity-0"
+        className="pointer-events-none absolute top-6 right-6 z-20 -rotate-12 rounded-xl border-2 border-deck-accent bg-bg-elevated/80 px-3 py-1 text-sm font-bold tracking-[0.12em] text-deck-accent opacity-0 backdrop-blur-sm"
       >
         NEXT
       </div>
       <div
         ref={backStampRef}
         aria-hidden
-        className="pointer-events-none absolute top-6 left-6 z-20 rotate-12 rounded-lg border-2 border-fg-muted px-3 py-1 text-sm font-bold tracking-wide text-fg-muted opacity-0"
+        className="pointer-events-none absolute top-6 left-6 z-20 rotate-12 rounded-xl border-2 border-fg-muted bg-bg-elevated/80 px-3 py-1 text-sm font-bold tracking-[0.12em] text-fg-muted opacity-0 backdrop-blur-sm"
       >
         BACK
       </div>
       <div ref={innerRef} className="flip-card-inner">
         <div
           ref={frontFaceRef}
-          className="flip-card-front flex items-center justify-center overflow-hidden rounded-3xl border border-border bg-bg-elevated p-8 text-center shadow-sm"
+          className="flip-card-front flex flex-col items-center justify-center overflow-hidden rounded-3xl border border-border bg-bg-elevated p-8 text-center shadow-flash"
         >
-          <div ref={frontContentRef} className="flex flex-col items-center gap-4">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-deck-accent/8 to-transparent"
+          />
+          <span className="text-eyebrow absolute top-6 left-1/2 -translate-x-1/2 text-fg-subtle">
+            Question
+          </span>
+          <div ref={frontContentRef} className="relative flex flex-col items-center gap-4">
             {card.frontImage ? (
               <img
                 src={card.frontImage}
@@ -271,9 +278,16 @@ export const Flashcard = forwardRef<
         </div>
         <div
           ref={backFaceRef}
-          className="flip-card-back flex items-center justify-center overflow-hidden rounded-3xl border border-border bg-accent p-8 text-center shadow-sm"
+          className="flip-card-back flex flex-col items-center justify-center overflow-hidden rounded-3xl border border-deck-accent bg-deck-accent p-8 text-center shadow-flash"
         >
-          <div ref={backContentRef} className="flex flex-col items-center gap-4">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/15 via-transparent to-black/10"
+          />
+          <span className="text-eyebrow absolute top-6 left-1/2 -translate-x-1/2 text-deck-accent-fg/70">
+            Answer
+          </span>
+          <div ref={backContentRef} className="relative flex flex-col items-center gap-4">
             {card.backImage ? (
               <img
                 src={card.backImage}
@@ -281,7 +295,7 @@ export const Flashcard = forwardRef<
                 className="max-h-[28vh] w-auto max-w-full rounded-xl object-contain"
               />
             ) : null}
-            <p className="text-title text-accent-fg">{card.back}</p>
+            <p className="text-title text-deck-accent-fg">{card.back}</p>
           </div>
         </div>
       </div>

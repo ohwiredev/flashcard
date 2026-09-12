@@ -32,12 +32,16 @@ export function ImagePicker({
     <div className="flex items-center gap-3">
       {value ? (
         <div className="relative shrink-0">
-          <img src={value} alt="" className="h-16 w-16 rounded-lg border border-border object-cover" />
+          <img
+            src={value}
+            alt=""
+            className="h-16 w-16 rounded-xl border border-border object-cover shadow-card"
+          />
           <button
             type="button"
             onClick={() => onChange(undefined)}
             aria-label={`Remove ${label.toLowerCase()} image`}
-            className="pressable absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-fg text-xs leading-none text-bg"
+            className="focus-ring pressable absolute -top-1.5 -right-1.5 flex h-5.5 w-5.5 items-center justify-center rounded-full border-2 border-bg-elevated bg-fg text-xs leading-none text-bg shadow-card"
           >
             ×
           </button>
