@@ -39,6 +39,7 @@ function ReviewSession({ deck, onExit }: { deck: Deck; onExit: () => void }) {
   const [isFlipped, setIsFlipped] = useState(false)
   const [completed, setCompleted] = useState(false)
   const flashcardRef = useRef<FlashcardHandle>(null)
+  const peekRef = useRef<HTMLDivElement>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   const canPrev = index > 0
@@ -127,7 +128,7 @@ function ReviewSession({ deck, onExit }: { deck: Deck; onExit: () => void }) {
             onShowShortcuts={() => setShortcutsOpen(true)}
           />
           <div className="relative mt-8 w-full">
-            {peekCard ? <CardPeek card={peekCard} /> : null}
+            {peekCard ? <CardPeek ref={peekRef} card={peekCard} /> : null}
             <Flashcard
               ref={flashcardRef}
               card={currentCard}
@@ -135,6 +136,7 @@ function ReviewSession({ deck, onExit }: { deck: Deck; onExit: () => void }) {
               onFlip={handleFlip}
               onSwipe={handleSwipe}
               canSwipeBack={canPrev}
+              peekRef={peekRef}
             />
           </div>
           <p className="text-caption mt-5 flex flex-wrap items-center justify-center gap-1.5 text-fg-subtle">
@@ -149,9 +151,10 @@ function ReviewSession({ deck, onExit }: { deck: Deck; onExit: () => void }) {
             </kbd>
             <span>to move</span>
           </p>
+          {/* Buttons play the same swipe as a drag or arrow key, rather than jumping instantly. */}
           <ReviewControls
-            onPrev={handlePrev}
-            onNext={handleNext}
+            onPrev={() => flashcardRef.current?.swipe('left')}
+            onNext={() => flashcardRef.current?.swipe('right')}
             onFlip={handleFlip}
             onShuffle={handleShuffle}
             canPrev={canPrev}

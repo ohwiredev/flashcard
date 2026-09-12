@@ -5,6 +5,7 @@ import InertiaPlugin from 'gsap/InertiaPlugin'
 import {
   forwardRef,
   type KeyboardEvent,
+  type RefObject,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -12,16 +13,51 @@ import {
 import { useReducedMotion } from '../../hooks/useReducedMotion'
 import type { Card } from '../../lib/types'
 import { cn } from '../../lib/utils'
+import { PEEK_OPACITY, PEEK_SCALE, PEEK_Y } from './cardMotion'
 
 gsap.registerPlugin(Draggable, InertiaPlugin)
 
-const SWIPE_DISTANCE_RATIO = 0.32
-const SWIPE_VELOCITY_THRESHOLD = 500
-const MAX_TILT_DEG = 16
+/** Fraction of the card's width a release must (projected) travel to commit a swipe. */
+const COMMIT_RATIO = 0.25
+/** Floor for the commit distance, so a narrow phone card still needs a deliberate drag. */
+const MIN_COMMIT_DISTANCE = 64
+/** Decay for momentum projection — a flick commits based on where it's heading, not where it let go. */
+const DECELERATION_RATE = 0.995
+/** A flick only counts once the finger has really travelled, so a sloppy tap can't fling the card. */
+const MIN_FLICK_DISTANCE = 24
+/** Movement (px) before a press becomes a drag. Thumb taps wobble a few pixels; they should still flip. */
+const TAP_SLOP = 8
+const MAX_TILT_DEG = 12
+/** Slight lift while held, so the card reads as picked up off the deck. */
+const LIFT_SCALE = 1.02
+/** Speed floor (px/s) for the fly-off, so a slow drag past the threshold still leaves briskly. */
+const MIN_FLY_SPEED = 1100
+
+type Direction = 'left' | 'right'
+
+/** Where a release with this velocity would come to rest (Apple's scroll-deceleration projection). */
+function projectMomentum(velocity: number): number {
+  return ((velocity / 1000) * DECELERATION_RATE) / (1 - DECELERATION_RATE)
+}
+
+/** Progressive resistance past an edge: follows closely at first, then less and less the further it's pulled. */
+function rubberband(overshoot: number, dimension: number, constant = 0.55): number {
+  return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot))
+}
+
+function hapticTick() {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(8)
+}
+
+/** Horizontal distance that fully clears the viewport, however wide the card is relative to it. */
+function offscreenX(el: HTMLElement): number {
+  const width = el.offsetWidth || 1
+  return (window.innerWidth + width) / 2 + width * 0.25
+}
 
 export interface FlashcardHandle {
   /** Plays the same fly-off swipe animation as a drag release, e.g. for arrow-key navigation. */
-  swipe: (direction: 'left' | 'right') => void
+  swipe: (direction: Direction) => void
 }
 
 export const Flashcard = forwardRef<
@@ -30,10 +66,12 @@ export const Flashcard = forwardRef<
     card: Card
     isFlipped: boolean
     onFlip: () => void
-    onSwipe: (direction: 'left' | 'right') => void
+    onSwipe: (direction: Direction) => void
     canSwipeBack: boolean
+    /** The card peeking out behind this one; lifted into place as this card is swiped forward. */
+    peekRef: RefObject<HTMLDivElement | null>
   }
->(function Flashcard({ card, isFlipped, onFlip, onSwipe, canSwipeBack }, ref) {
+>(function Flashcard({ card, isFlipped, onFlip, onSwipe, canSwipeBack, peekRef }, ref) {
   const reduced = useReducedMotion()
   const rootRef = useRef<HTMLDivElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
@@ -46,26 +84,80 @@ export const Flashcard = forwardRef<
   const draggableRef = useRef<Draggable | null>(null)
   const isLeavingRef = useRef(false)
   const canSwipeBackRef = useRef(canSwipeBack)
-  const flyOffRef = useRef<(direction: 'left' | 'right', releaseY?: number) => void>(() => {})
+  const flyOffRef = useRef<(direction: Direction, velocity?: number) => void>(() => {})
+  /** Direction of the swipe that replaced the previous card, so the new one can enter to match. */
+  const arrivedViaRef = useRef<Direction | null>(null)
 
   // Keep the card focused as it changes so keyboard flipping works without re-tabbing.
   useEffect(() => {
     rootRef.current?.focus({ preventScroll: true })
   }, [card.id])
 
-  // Mirror the latest prop into a ref so the Draggable callbacks (created once per card,
-  // not per render) always read the current value without needing to be recreated.
+  // Mirror the latest prop into a ref so the imperative handle (created once) reads the current value.
   useEffect(() => {
     canSwipeBackRef.current = canSwipeBack
   })
 
-  // Snap the card (position, tilt, stamps) back to rest whenever a new card arrives.
+  // Place the new card and refill the peek slot so the hand-off reads as one continuous deck:
+  // - forward: the peek was already lifted into this card's exact pose during the swipe, so the
+  //   new card simply takes its place; the peek slot refills from deeper in the deck.
+  // - back: the previous card returns along the path it left by, and the card we were on settles
+  //   back into the peek slot.
   useGSAP(
     () => {
+      const el = rootRef.current
+      if (!el) return
+      const peek = peekRef.current
+      const arrivedVia = reduced ? null : arrivedViaRef.current
+      arrivedViaRef.current = null
       isLeavingRef.current = false
-      draggableRef.current?.enable()
-      gsap.set(rootRef.current, { x: 0, y: 0, rotation: 0 })
-      gsap.set([nextStampRef.current, backStampRef.current], { opacity: 0 })
+
+      const inner = innerRef.current
+      const faces = [frontFaceRef.current, backFaceRef.current]
+      gsap.killTweensOf([el, peek, inner, ...faces, nextStampRef.current, backStampRef.current].filter(Boolean))
+      gsap.set([nextStampRef.current, backStampRef.current], { opacity: 0, scale: 0.9 })
+
+      // Snap to the new card's flip state. Otherwise, swiping away a card showing its answer would
+      // leave the flip effect to animate the new card from the answer side back to its question.
+      if (reduced) {
+        gsap.set(inner, { rotationY: 0 })
+        gsap.set(faces[0], { opacity: isFlipped ? 0 : 1 })
+        gsap.set(faces[1], { opacity: isFlipped ? 1 : 0 })
+      } else {
+        gsap.set(inner, { rotationY: isFlipped ? 180 : 0 })
+        gsap.set(faces, { opacity: 1 })
+      }
+      gsap.set(el, { x: 0, y: 0, rotation: 0, scale: 1 })
+      if (peek) gsap.set(peek, { y: PEEK_Y, scale: PEEK_SCALE, opacity: PEEK_OPACITY })
+
+      if (arrivedVia === 'right') {
+        if (peek) {
+          gsap.from(peek, {
+            y: PEEK_Y + 14,
+            scale: PEEK_SCALE - 0.04,
+            opacity: 0,
+            duration: 0.36,
+            ease: 'power3.out',
+          })
+        }
+        // Content is already on screen via the lifted peek; fading it in again would flicker.
+        return
+      }
+
+      if (arrivedVia === 'left') {
+        gsap.from(el, { x: -offscreenX(el), rotation: -MAX_TILT_DEG, duration: 0.42, ease: 'power3.out' })
+        if (peek) {
+          gsap.from(peek, { y: 0, scale: 1, opacity: 1, duration: 0.42, ease: 'power3.out' })
+        }
+        return
+      }
+
+      const targets = [frontContentRef.current, backContentRef.current].filter(Boolean)
+      gsap.fromTo(
+        targets,
+        { opacity: 0, y: reduced ? 0 : 4 },
+        { opacity: 1, y: 0, duration: 0.16, ease: 'power2.out', overwrite: 'auto' },
+      )
     },
     { dependencies: [card.id], scope: rootRef },
   )
@@ -101,91 +193,172 @@ export const Flashcard = forwardRef<
     { dependencies: [isFlipped, reduced], scope: rootRef },
   )
 
-  useGSAP(
-    () => {
-      const targets = [frontContentRef.current, backContentRef.current].filter(Boolean)
-      if (targets.length === 0) return
-      gsap.fromTo(
-        targets,
-        { opacity: 0, y: reduced ? 0 : 4 },
-        { opacity: 1, y: 0, duration: 0.16, ease: 'power2.out', overwrite: 'auto' },
-      )
-    },
-    { dependencies: [card.id], scope: rootRef },
-  )
-
-  // Tinder-style drag: track the gesture, tilt and stamp proportionally to progress,
-  // then on release either fling the card off-screen (past a distance/velocity threshold
-  // in an allowed direction) or spring it back to center. flyOff()/snapBack() are shared
-  // with the imperative `swipe()` handle so arrow-key navigation plays the same animation.
+  // Swipe gesture. The card tracks the finger horizontally (vertical movement is left to native
+  // page scrolling), tilts toward whichever end was grabbed, and lifts the peek card toward the
+  // front as it goes. On release, momentum is projected forward: if the card is heading past the
+  // commit distance in an allowed direction it flies off at the finger's speed, otherwise it
+  // springs home. flyOff() is shared with the imperative `swipe()` handle so arrow keys and the
+  // Previous/Next buttons play the same animation.
   useGSAP(
     () => {
       const el = rootRef.current
       if (!el) return
 
-      function flyOff(direction: 'left' | 'right', releaseY = 0): void {
+      let tiltSign = 1
+      let dragged = false
+      /** Which way the card is currently past the commit distance, if at all. */
+      let armed: Direction | null = null
+
+      const commitDistance = () => Math.max(MIN_COMMIT_DISTANCE, (el.offsetWidth || 1) * COMMIT_RATIO)
+
+      /** 0 = peek at rest behind the deck, 1 = peek exactly in the active card's pose. */
+      function liftPeek(t: number, tween?: gsap.TweenVars) {
+        const peek = peekRef.current
+        if (!peek) return
+        const pose = {
+          y: PEEK_Y * (1 - t),
+          scale: PEEK_SCALE + (1 - PEEK_SCALE) * t,
+          opacity: PEEK_OPACITY + (1 - PEEK_OPACITY) * t,
+        }
+        if (tween) gsap.to(peek, { ...pose, ...tween, overwrite: true })
+        else gsap.set(peek, pose)
+      }
+
+      const stampFor = (direction: Direction) =>
+        direction === 'right' ? nextStampRef.current : backStampRef.current
+
+      // Crossing the commit distance is the moment a release would count, so mark it: the stamp
+      // pops and (where supported) the device ticks. Dropping back under it quietly un-arms.
+      function setArmed(next: Direction | null) {
+        if (next === armed) return
+        const previous = armed && stampFor(armed)
+        if (previous) gsap.to(previous, { scale: 0.9, duration: 0.18, ease: 'power2.out' })
+        armed = next
+        const stamp = next && stampFor(next)
+        if (!stamp) return
+        hapticTick()
+        gsap.to(stamp, { scale: 1.08, duration: 0.18, ease: 'back.out(3)' })
+      }
+
+      function flyOff(direction: Direction, velocity = 0): void {
         if (!el || isLeavingRef.current) return
         isLeavingRef.current = true
         draggableRef.current?.disable()
+        gsap.killTweensOf(el)
 
-        const width = el.offsetWidth || 1
-        const flyX = direction === 'right' ? width * 1.6 : -width * 1.6
-        const leadingStamp = direction === 'right' ? nextStampRef.current : backStampRef.current
-        const trailingStamp = direction === 'right' ? backStampRef.current : nextStampRef.current
+        const sign = direction === 'right' ? 1 : -1
+        const targetX = sign * offscreenX(el)
+        const currentX = Number(gsap.getProperty(el, 'x')) || 0
 
-        gsap.set(trailingStamp, { opacity: 0 })
-        gsap.to(leadingStamp, { opacity: 1, duration: 0.1 })
+        // Hand off the finger's velocity: the curve starts at exactly the release speed and accelerates
+        // to cover the rest (p² for a keyboard swipe with no velocity, linear for a fast flick).
+        const remaining = Math.abs(targetX - currentX) || 1
+        const releaseSpeed = Math.max(0, velocity * sign)
+        const speed = Math.max(releaseSpeed, MIN_FLY_SPEED)
+        const duration = reduced ? 0.12 : gsap.utils.clamp(0.16, 0.4, remaining / speed)
+        const initialSlope = gsap.utils.clamp(0, 1, (releaseSpeed * duration) / remaining)
+
+        gsap.set(stampFor(direction === 'right' ? 'left' : 'right'), { opacity: 0 })
+        gsap.to(stampFor(direction), { opacity: 1, duration: 0.1 })
+        if (direction === 'right' && !reduced) liftPeek(1, { duration, ease: 'power2.out' })
+
         gsap.to(el, {
-          x: flyX,
-          y: releaseY,
-          rotation: reduced ? 0 : direction === 'right' ? MAX_TILT_DEG * 1.5 : -MAX_TILT_DEG * 1.5,
-          duration: reduced ? 0.12 : 0.32,
-          ease: 'power1.in',
-          onComplete: () => onSwipe(direction),
+          x: targetX,
+          y: reduced ? 0 : 24,
+          rotation: reduced ? 0 : sign * tiltSign * MAX_TILT_DEG * 1.6,
+          duration,
+          ease: reduced ? 'none' : (p: number) => initialSlope * p + (1 - initialSlope) * p * p,
+          onComplete: () => {
+            arrivedViaRef.current = direction
+            onSwipe(direction)
+          },
         })
       }
 
       function snapBack() {
         if (!el) return
+        const distance = Math.abs(Number(gsap.getProperty(el, 'x')) || 0)
+        // A little overshoot, because the release carried momentum — but a settle, not a wobble.
         gsap.to(el, {
           x: 0,
-          y: 0,
           rotation: 0,
-          duration: reduced ? 0.18 : 0.45,
-          ease: reduced ? 'power1.out' : 'elastic.out(1, 0.65)',
+          scale: 1,
+          duration: reduced ? 0.18 : gsap.utils.clamp(0.3, 0.5, 0.28 + distance / 900),
+          ease: reduced ? 'power1.out' : 'back.out(1.15)',
+          overwrite: true,
         })
-        gsap.to([nextStampRef.current, backStampRef.current], { opacity: 0, duration: 0.2 })
+        gsap.to([nextStampRef.current, backStampRef.current], { opacity: 0, scale: 0.9, duration: 0.2 })
+        liftPeek(0, { duration: 0.3, ease: 'power2.out' })
+        armed = null
       }
 
+      // Draggable's own inertia is off (its throw tween would fight the release animation);
+      // velocity is tracked directly instead.
+      InertiaPlugin.track(el, 'x')
+
       const [draggable] = Draggable.create(el, {
-        type: 'x,y',
-        inertia: true,
+        type: 'x',
+        inertia: false,
+        minimumMovement: TAP_SLOP,
         allowContextMenu: true,
+        // Rubber-band against pulling back when there is no previous card to go to. (Done via
+        // liveSnap rather than `bounds`, which Draggable hard-clamps on release without inertia.)
+        liveSnap: canSwipeBack
+          ? false
+          : { x: (value: number) => (value < 0 ? rubberband(value, el.offsetWidth || 1) : value) },
+        onPress() {
+          if (isLeavingRef.current) return
+          dragged = false
+          // Grab it mid-flight: stop any settle or entrance so the drag starts from where it is.
+          gsap.killTweensOf(el)
+          if (peekRef.current) gsap.killTweensOf(peekRef.current)
+          const rect = el.getBoundingClientRect()
+          tiltSign = this.pointerY - window.scrollY < rect.top + rect.height / 2 ? 1 : -1
+          if (!reduced) gsap.to(el, { scale: LIFT_SCALE, duration: 0.15, ease: 'power2.out' })
+        },
+        onDragStart() {
+          dragged = true
+        },
+        onRelease() {
+          // A tap never reaches onDragEnd. Settle the lift — and, if the tap caught the card
+          // mid-settle (onPress stopped that), finish bringing it home.
+          if (!dragged && !isLeavingRef.current) snapBack()
+        },
         onClick() {
           if (isLeavingRef.current) return
           onFlip()
         },
         onDrag() {
-          const width = el.offsetWidth || 1
-          const progress = gsap.utils.clamp(-1, 1, this.x / (width / 2))
+          const commit = commitDistance()
+          const x = this.x
+          const progress = x / commit
+          const forward = x >= 0
+          const allowed = forward || canSwipeBack
+
           if (!reduced) {
-            gsap.set(el, { rotation: progress * MAX_TILT_DEG })
+            const tilt = gsap.utils.clamp(-1, 1, x / ((el.offsetWidth || 1) * 0.6))
+            gsap.set(el, { rotation: tilt * MAX_TILT_DEG * tiltSign })
           }
-          gsap.set(nextStampRef.current, { opacity: Math.max(0, progress) })
-          gsap.set(backStampRef.current, { opacity: Math.max(0, -progress) })
+
+          // Stamps stay hidden through small wobbles and are fully shown just past halfway.
+          const stampOpacity = allowed ? gsap.utils.clamp(0, 1, (Math.abs(progress) - 0.12) / 0.45) : 0
+          gsap.set(stampFor(forward ? 'right' : 'left'), { opacity: stampOpacity })
+          gsap.set(stampFor(forward ? 'left' : 'right'), { opacity: 0 })
+
+          // The peek reaches the active card's exact pose right at the commit distance, previewing
+          // the outcome before the finger lifts.
+          if (!reduced) liftPeek(forward ? gsap.utils.clamp(0, 1, progress) : 0)
+
+          setArmed(allowed && Math.abs(x) >= commit ? (forward ? 'right' : 'left') : null)
         },
         onDragEnd() {
-          const width = el.offsetWidth || 1
-          const distance = this.x
           const velocity = InertiaPlugin.getVelocity(el, 'x')
-          const direction: 'left' | 'right' = distance + velocity * 0.1 >= 0 ? 'right' : 'left'
-          const allowed = direction === 'right' || canSwipeBackRef.current
+          const projected = Math.abs(this.x) >= MIN_FLICK_DISTANCE ? this.x + projectMomentum(velocity) : this.x
+          const direction: Direction = projected >= 0 ? 'right' : 'left'
+          const allowed = direction === 'right' || canSwipeBack
 
-          const pastThreshold = Math.abs(distance) > width * SWIPE_DISTANCE_RATIO
-          const flicked = Math.abs(velocity) > SWIPE_VELOCITY_THRESHOLD
-
-          if (allowed && (pastThreshold || flicked)) {
-            flyOff(direction, this.y + velocity * 0.04)
+          if (allowed && Math.abs(projected) >= commitDistance()) {
+            flyOff(direction, velocity)
           } else {
             snapBack()
           }
@@ -193,17 +366,17 @@ export const Flashcard = forwardRef<
       })
 
       draggableRef.current = draggable
-
-      // Exposed for arrow-key navigation (see useImperativeHandle below), so it plays the
-      // same fling animation as a drag-released swipe instead of an instant page-style jump.
       flyOffRef.current = flyOff
 
       return () => {
         draggable.kill()
+        InertiaPlugin.untrack(el)
         draggableRef.current = null
       }
     },
-    { dependencies: [card.id, reduced], scope: rootRef },
+    // revertOnUpdate: without it, useGSAP defers all cleanup to unmount and every card would stack
+    // another Draggable (and its callbacks) onto the same element.
+    { dependencies: [card.id, reduced, canSwipeBack], scope: rootRef, revertOnUpdate: true },
   )
 
   useImperativeHandle(
@@ -235,21 +408,21 @@ export const Flashcard = forwardRef<
         isFlipped ? 'Showing answer. Press space to show question.' : 'Showing question. Press space to show answer.'
       }
       className={cn(
-        'flip-card relative z-10 mx-auto block aspect-[3/2] w-full max-w-xl cursor-grab touch-none rounded-3xl text-left outline-none select-none active:cursor-grabbing',
+        'flip-card relative z-10 mx-auto block aspect-[3/2] w-full max-w-xl cursor-grab rounded-3xl text-left outline-none select-none active:cursor-grabbing',
         'focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-4 focus-visible:ring-offset-bg',
       )}
     >
       <div
         ref={nextStampRef}
         aria-hidden
-        className="pointer-events-none absolute top-6 right-6 z-20 -rotate-12 rounded-xl border-2 border-deck-accent bg-bg-elevated/80 px-3 py-1 text-sm font-bold tracking-[0.12em] text-deck-accent opacity-0 backdrop-blur-sm"
+        className="pointer-events-none absolute top-6 right-6 z-20 rounded-xl border-2 border-deck-accent bg-bg-elevated/80 px-3 py-1 text-sm font-bold tracking-[0.12em] text-deck-accent opacity-0 backdrop-blur-sm"
       >
         NEXT
       </div>
       <div
         ref={backStampRef}
         aria-hidden
-        className="pointer-events-none absolute top-6 left-6 z-20 rotate-12 rounded-xl border-2 border-fg-muted bg-bg-elevated/80 px-3 py-1 text-sm font-bold tracking-[0.12em] text-fg-muted opacity-0 backdrop-blur-sm"
+        className="pointer-events-none absolute top-6 left-6 z-20 rounded-xl border-2 border-fg-muted bg-bg-elevated/80 px-3 py-1 text-sm font-bold tracking-[0.12em] text-fg-muted opacity-0 backdrop-blur-sm"
       >
         BACK
       </div>
@@ -270,6 +443,7 @@ export const Flashcard = forwardRef<
               <img
                 src={card.frontImage}
                 alt=""
+                draggable={false}
                 className="max-h-[28vh] w-auto max-w-full rounded-xl object-contain"
               />
             ) : null}
@@ -292,6 +466,7 @@ export const Flashcard = forwardRef<
               <img
                 src={card.backImage}
                 alt=""
+                draggable={false}
                 className="max-h-[28vh] w-auto max-w-full rounded-xl object-contain"
               />
             ) : null}

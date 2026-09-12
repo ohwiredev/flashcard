@@ -272,6 +272,14 @@ body {
      Flashcard.tsx); this CSS only sets up the static 3D structure GSAP animates within. */
   .flip-card {
     perspective: 1200px;
+    /* Promoted up front so the first drag frame doesn't hitch; no grey tap flash or
+       iOS long-press image callout interrupting a swipe. */
+    will-change: transform;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  .card-peek {
+    will-change: transform, opacity;
   }
   .flip-card-inner {
     position: relative;

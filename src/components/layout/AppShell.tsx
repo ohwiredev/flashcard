@@ -106,8 +106,9 @@ export function AppShell() {
     { scope: mainRef },
   )
 
+  // overflow-x-clip: a card swiped off-screen must not widen the page (iOS would pan or zoom out mid-swipe).
   return (
-    <div className="flex min-h-screen flex-col bg-bg text-fg">
+    <div className="flex min-h-screen flex-col overflow-x-clip bg-bg text-fg">
       <header
         className={cn(
           'sticky top-0 z-30 bg-surface-translucent backdrop-blur-xl transition-[box-shadow,border-color] duration-[var(--duration-md)] ease-[var(--ease-out)]',
