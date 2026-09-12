@@ -6,6 +6,7 @@ import { useDeck } from '../../hooks/useDeck'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
 import { cn } from '../../lib/utils'
 import { ThemeToggle } from '../theme/ThemeToggle'
+import { Toast } from '../ui/Toast'
 
 const SESSION_KEY = 'appShellEntered'
 
@@ -136,6 +137,7 @@ export function AppShell() {
       <main ref={mainRef} className="flex-1">
         <Outlet />
       </main>
+      <Toast />
     </div>
   )
 }

@@ -1,12 +1,10 @@
+import { uploadImage } from './apiClient'
+
 const MAX_DIMENSION = 640
 const JPEG_QUALITY = 0.8
 const MAX_SOURCE_BYTES = 15 * 1024 * 1024 // guard against hanging the canvas on huge files
 
-/**
- * Reads an image file and returns a resized, compressed data URL — cards are stored in
- * localStorage, which has no separate file storage, so keeping images small matters.
- */
-export function fileToResizedDataUrl(file: File): Promise<string> {
+function resizeToBlob(file: File): Promise<Blob> {
   if (!file.type.startsWith('image/')) {
     return Promise.reject(new Error('That file is not an image.'))
   }
@@ -34,10 +32,20 @@ export function fileToResizedDataUrl(file: File): Promise<string> {
           return
         }
         ctx.drawImage(img, 0, 0, width, height)
-        resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY))
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error('Could not process that image.'))),
+          'image/jpeg',
+          JPEG_QUALITY,
+        )
       }
       img.src = reader.result as string
     }
     reader.readAsDataURL(file)
   })
+}
+
+/** Resizes an image client-side, then uploads it to R2 and returns the URL to store on the card. */
+export async function uploadCardImage(file: File): Promise<string> {
+  const blob = await resizeToBlob(file)
+  return uploadImage(blob)
 }

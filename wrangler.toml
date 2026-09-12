@@ -1,0 +1,8 @@
+name = "flashcard"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "flashcard-db"
+database_id = "7be4ac2d-e06c-4aed-ac66-634b8d447ada"

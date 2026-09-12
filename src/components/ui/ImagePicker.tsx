@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react'
-import { fileToResizedDataUrl } from '../../lib/image'
+import { uploadCardImage } from '../../lib/image'
 import { Button } from './Button'
 
 export function ImagePicker({
@@ -9,10 +9,11 @@ export function ImagePicker({
 }: {
   label: string
   value?: string
-  onChange: (dataUrl: string | undefined) => void
+  onChange: (url: string | undefined) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -21,10 +22,13 @@ export function ImagePicker({
 
     try {
       setError(null)
-      const dataUrl = await fileToResizedDataUrl(file)
-      onChange(dataUrl)
+      setUploading(true)
+      const url = await uploadCardImage(file)
+      onChange(url)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add that image.')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -48,8 +52,14 @@ export function ImagePicker({
         </div>
       ) : null}
       <div className="flex flex-col gap-1">
-        <Button type="button" intent="secondary" size="sm" onClick={() => inputRef.current?.click()}>
-          {value ? 'Change image' : 'Add image'}
+        <Button
+          type="button"
+          intent="secondary"
+          size="sm"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {uploading ? 'Uploading…' : value ? 'Change image' : 'Add image'}
         </Button>
         {error ? <p className="text-caption text-red-600">{error}</p> : null}
       </div>

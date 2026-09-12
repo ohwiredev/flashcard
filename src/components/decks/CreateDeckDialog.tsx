@@ -14,10 +14,11 @@ export function CreateDeckDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   deck?: Deck | null
-  onSubmit: (name: string, description: string) => void
+  onSubmit: (name: string, description: string) => Promise<void>
 }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -26,11 +27,18 @@ export function CreateDeckDialog({
     }
   }, [open, deck])
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!name.trim()) return
-    onSubmit(name.trim(), description.trim())
-    onOpenChange(false)
+    try {
+      setSubmitting(true)
+      await onSubmit(name.trim(), description.trim())
+      onOpenChange(false)
+    } catch {
+      // Error is surfaced to the user via the shared toast; keep the dialog open to retry.
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -59,8 +67,8 @@ export function CreateDeckDialog({
           <Button type="button" intent="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!name.trim()}>
-            {deck ? 'Save' : 'Create deck'}
+          <Button type="submit" disabled={!name.trim() || submitting}>
+            {submitting ? 'Saving…' : deck ? 'Save' : 'Create deck'}
           </Button>
         </div>
       </form>

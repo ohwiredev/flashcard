@@ -4,7 +4,9 @@ import { DeckGrid } from '../components/decks/DeckGrid'
 import { EmptyState } from '../components/decks/EmptyState'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { ApiError } from '../lib/apiClient'
 import { useFlashcardStore } from '../lib/store'
+import { useToastStore } from '../lib/toastStore'
 import type { Deck } from '../lib/types'
 
 function PlusIcon() {
@@ -24,6 +26,7 @@ function PlusIcon() {
 
 export function DecksRoute() {
   const decks = useFlashcardStore((state) => state.decks)
+  const status = useFlashcardStore((state) => state.status)
   const createDeck = useFlashcardStore((state) => state.createDeck)
   const renameDeck = useFlashcardStore((state) => state.renameDeck)
   const deleteDeck = useFlashcardStore((state) => state.deleteDeck)
@@ -44,11 +47,24 @@ export function DecksRoute() {
     setFormOpen(true)
   }
 
-  function handleSubmit(name: string, description: string) {
-    if (editingDeck) {
-      renameDeck(editingDeck.id, name, description || undefined)
-    } else {
-      createDeck(name, description || undefined)
+  async function handleSubmit(name: string, description: string) {
+    try {
+      if (editingDeck) {
+        await renameDeck(editingDeck.id, name, description || undefined)
+      } else {
+        await createDeck(name, description || undefined)
+      }
+    } catch (err) {
+      useToastStore.getState().showError(err instanceof ApiError ? err.message : 'Something went wrong.')
+      throw err
+    }
+  }
+
+  async function handleDelete(deck: Deck) {
+    try {
+      await deleteDeck(deck.id)
+    } catch (err) {
+      useToastStore.getState().showError(err instanceof ApiError ? err.message : 'Could not delete that deck.')
     }
   }
 
@@ -75,7 +91,9 @@ export function DecksRoute() {
         </Button>
       </header>
 
-      {decks.length === 0 ? (
+      {status === 'loading' || status === 'idle' ? (
+        <p className="text-sm text-fg-muted">Loading your decks…</p>
+      ) : decks.length === 0 ? (
         <EmptyState onCreate={openCreate} />
       ) : (
         <DeckGrid decks={decks} onRename={openRename} onDelete={setDeletingDeck} />
@@ -94,7 +112,7 @@ export function DecksRoute() {
         description={
           deletingDeck ? `"${deletingDeck.name}" and all its cards will be permanently removed.` : ''
         }
-        onConfirm={() => deletingDeck && deleteDeck(deletingDeck.id)}
+        onConfirm={() => deletingDeck && handleDelete(deletingDeck)}
       />
     </div>
   )

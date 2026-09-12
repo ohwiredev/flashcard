@@ -14,12 +14,13 @@ export function CardFormDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   card?: Card | null
-  onSubmit: (front: string, back: string, frontImage?: string, backImage?: string) => void
+  onSubmit: (front: string, back: string, frontImage?: string, backImage?: string) => Promise<void>
 }) {
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
   const [frontImage, setFrontImage] = useState<string | undefined>(undefined)
   const [backImage, setBackImage] = useState<string | undefined>(undefined)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -35,11 +36,18 @@ export function CardFormDialog({
   const frontFilled = Boolean(front.trim() || frontImage)
   const canSubmit = frontFilled && Boolean(back.trim())
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!canSubmit) return
-    onSubmit(front.trim(), back.trim(), frontImage, backImage)
-    onOpenChange(false)
+    try {
+      setSubmitting(true)
+      await onSubmit(front.trim(), back.trim(), frontImage, backImage)
+      onOpenChange(false)
+    } catch {
+      // Error is surfaced to the user via the shared toast; keep the dialog open to retry.
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -75,8 +83,8 @@ export function CardFormDialog({
           <Button type="button" intent="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!canSubmit}>
-            {card ? 'Save' : 'Add card'}
+          <Button type="submit" disabled={!canSubmit || submitting}>
+            {submitting ? 'Saving…' : card ? 'Save' : 'Add card'}
           </Button>
         </div>
       </form>

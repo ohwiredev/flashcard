@@ -1,94 +1,93 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import { createId } from './id'
-import { createSeedDecks } from './seed'
+import { apiDelete, apiGet, apiPatch, apiPost } from './apiClient'
 import type { Card, Deck, DeckAccent } from './types'
 
 interface FlashcardState {
   decks: Deck[]
-  createDeck: (name: string, description?: string, accent?: DeckAccent) => Deck
-  renameDeck: (deckId: string, name: string, description?: string) => void
-  deleteDeck: (deckId: string) => void
-  addCard: (deckId: string, front: string, back: string, frontImage?: string, backImage?: string) => void
+  status: 'idle' | 'loading' | 'loaded' | 'error'
+  fetchDecks: () => Promise<void>
+  reset: () => void
+  createDeck: (name: string, description?: string, accent?: DeckAccent) => Promise<Deck>
+  renameDeck: (deckId: string, name: string, description?: string) => Promise<void>
+  deleteDeck: (deckId: string) => Promise<void>
+  addCard: (deckId: string, front: string, back: string, frontImage?: string, backImage?: string) => Promise<void>
   updateCard: (
     deckId: string,
     cardId: string,
     patch: Partial<Pick<Card, 'front' | 'back' | 'frontImage' | 'backImage'>>,
-  ) => void
-  deleteCard: (deckId: string, cardId: string) => void
+  ) => Promise<void>
+  deleteCard: (deckId: string, cardId: string) => Promise<void>
 }
 
-const ACCENTS: DeckAccent[] = ['blue', 'violet', 'amber', 'teal', 'rose']
+export const useFlashcardStore = create<FlashcardState>()((set) => ({
+  decks: [],
+  status: 'idle',
 
-export const useFlashcardStore = create<FlashcardState>()(
-  persist(
-    (set, get) => ({
-      decks: createSeedDecks(),
+  fetchDecks: async () => {
+    set({ status: 'loading' })
+    try {
+      const data = await apiGet<{ decks: Deck[] }>('/decks')
+      set({ decks: data.decks, status: 'loaded' })
+    } catch {
+      set({ status: 'error' })
+    }
+  },
 
-      createDeck: (name, description, accent) => {
-        const now = Date.now()
-        const deck: Deck = {
-          id: createId(),
-          name,
-          description,
-          accent: accent ?? ACCENTS[get().decks.length % ACCENTS.length],
-          cards: [],
-          createdAt: now,
-          updatedAt: now,
-        }
-        set((state) => ({ decks: [...state.decks, deck] }))
-        return deck
-      },
+  reset: () => set({ decks: [], status: 'idle' }),
 
-      renameDeck: (deckId, name, description) => {
-        set((state) => ({
-          decks: state.decks.map((deck) =>
-            deck.id === deckId ? { ...deck, name, description, updatedAt: Date.now() } : deck,
-          ),
-        }))
-      },
+  createDeck: async (name, description, accent) => {
+    const data = await apiPost<{ deck: Deck }>('/decks', { name, description, accent })
+    set((state) => ({ decks: [...state.decks, data.deck] }))
+    return data.deck
+  },
 
-      deleteDeck: (deckId) => {
-        set((state) => ({ decks: state.decks.filter((deck) => deck.id !== deckId) }))
-      },
+  renameDeck: async (deckId, name, description) => {
+    await apiPatch(`/decks/${deckId}`, { name, description })
+    set((state) => ({
+      decks: state.decks.map((deck) =>
+        deck.id === deckId ? { ...deck, name, description, updatedAt: Date.now() } : deck,
+      ),
+    }))
+  },
 
-      addCard: (deckId, front, back, frontImage, backImage) => {
-        const now = Date.now()
-        const card: Card = { id: createId(), front, back, frontImage, backImage, createdAt: now, updatedAt: now }
-        set((state) => ({
-          decks: state.decks.map((deck) =>
-            deck.id === deckId ? { ...deck, cards: [...deck.cards, card], updatedAt: now } : deck,
-          ),
-        }))
-      },
+  deleteDeck: async (deckId) => {
+    await apiDelete(`/decks/${deckId}`)
+    set((state) => ({ decks: state.decks.filter((deck) => deck.id !== deckId) }))
+  },
 
-      updateCard: (deckId, cardId, patch) => {
-        const now = Date.now()
-        set((state) => ({
-          decks: state.decks.map((deck) =>
-            deck.id === deckId
-              ? {
-                  ...deck,
-                  updatedAt: now,
-                  cards: deck.cards.map((card) =>
-                    card.id === cardId ? { ...card, ...patch, updatedAt: now } : card,
-                  ),
-                }
-              : deck,
-          ),
-        }))
-      },
+  addCard: async (deckId, front, back, frontImage, backImage) => {
+    const data = await apiPost<{ card: Card }>(`/decks/${deckId}/cards`, { front, back, frontImage, backImage })
+    set((state) => ({
+      decks: state.decks.map((deck) =>
+        deck.id === deckId ? { ...deck, cards: [...deck.cards, data.card], updatedAt: Date.now() } : deck,
+      ),
+    }))
+  },
 
-      deleteCard: (deckId, cardId) => {
-        set((state) => ({
-          decks: state.decks.map((deck) =>
-            deck.id === deckId
-              ? { ...deck, cards: deck.cards.filter((card) => card.id !== cardId), updatedAt: Date.now() }
-              : deck,
-          ),
-        }))
-      },
-    }),
-    { name: 'flashcard-store-v1' },
-  ),
-)
+  updateCard: async (deckId, cardId, patch) => {
+    await apiPatch(`/decks/${deckId}/cards/${cardId}`, patch)
+    const now = Date.now()
+    set((state) => ({
+      decks: state.decks.map((deck) =>
+        deck.id === deckId
+          ? {
+              ...deck,
+              updatedAt: now,
+              cards: deck.cards.map((card) => (card.id === cardId ? { ...card, ...patch, updatedAt: now } : card)),
+            }
+          : deck,
+      ),
+    }))
+  },
+
+  deleteCard: async (deckId, cardId) => {
+    await apiDelete(`/decks/${deckId}/cards/${cardId}`)
+    set((state) => ({
+      decks: state.decks.map((deck) =>
+        deck.id === deckId
+          ? { ...deck, cards: deck.cards.filter((card) => card.id !== cardId), updatedAt: Date.now() }
+          : deck,
+      ),
+    }))
+  },
+}))

@@ -1,3 +1,6 @@
+import { useNavigate } from 'react-router'
+import { Button } from '../components/ui/Button'
+import { useAuthStore } from '../lib/authStore'
 import { FONT_OPTIONS, useSettingsStore } from '../lib/settingsStore'
 import { cn } from '../lib/utils'
 
@@ -20,6 +23,14 @@ function CheckIcon() {
 export function SettingsRoute() {
   const font = useSettingsStore((state) => state.font)
   const setFont = useSettingsStore((state) => state.setFont)
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login')
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
@@ -63,6 +74,14 @@ export function SettingsRoute() {
             )
           })}
         </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-sm font-semibold text-fg">Account</h2>
+        <p className="mt-1 text-sm text-fg-muted">{user?.email}</p>
+        <Button intent="secondary" size="sm" className="mt-4" onClick={handleLogout}>
+          Sign out
+        </Button>
       </section>
     </div>
   )

@@ -7,12 +7,15 @@ import { DeckHeader } from '../components/editor/DeckHeader'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { useDeck } from '../hooks/useDeck'
+import { ApiError } from '../lib/apiClient'
 import { useFlashcardStore } from '../lib/store'
+import { useToastStore } from '../lib/toastStore'
 import type { Card } from '../lib/types'
 
 export function DeckDetailRoute() {
   const { deckId } = useParams()
   const deck = useDeck(deckId)
+  const status = useFlashcardStore((state) => state.status)
   const navigate = useNavigate()
 
   const renameDeck = useFlashcardStore((state) => state.renameDeck)
@@ -28,6 +31,9 @@ export function DeckDetailRoute() {
   const [deletingCard, setDeletingCard] = useState<Card | null>(null)
 
   if (!deck) {
+    if (status === 'loading' || status === 'idle') {
+      return <div className="mx-auto max-w-3xl px-4 py-10 text-sm text-fg-muted sm:px-6 sm:py-14">Loading…</div>
+    }
     return <Navigate to="/" replace />
   }
 
@@ -43,11 +49,42 @@ export function DeckDetailRoute() {
     setCardFormOpen(true)
   }
 
-  function handleCardSubmit(front: string, back: string, frontImage?: string, backImage?: string) {
-    if (editingCard) {
-      updateCard(currentDeckId, editingCard.id, { front, back, frontImage, backImage })
-    } else {
-      addCard(currentDeckId, front, back, frontImage, backImage)
+  async function handleCardSubmit(front: string, back: string, frontImage?: string, backImage?: string) {
+    try {
+      if (editingCard) {
+        await updateCard(currentDeckId, editingCard.id, { front, back, frontImage, backImage })
+      } else {
+        await addCard(currentDeckId, front, back, frontImage, backImage)
+      }
+    } catch (err) {
+      useToastStore.getState().showError(err instanceof ApiError ? err.message : 'Something went wrong.')
+      throw err
+    }
+  }
+
+  async function handleRenameDeck(name: string, description: string) {
+    try {
+      await renameDeck(currentDeckId, name, description || undefined)
+    } catch (err) {
+      useToastStore.getState().showError(err instanceof ApiError ? err.message : 'Could not rename that deck.')
+      throw err
+    }
+  }
+
+  async function handleDeleteDeck() {
+    try {
+      await deleteDeck(currentDeckId)
+      navigate('/')
+    } catch (err) {
+      useToastStore.getState().showError(err instanceof ApiError ? err.message : 'Could not delete that deck.')
+    }
+  }
+
+  async function handleDeleteCard(card: Card) {
+    try {
+      await deleteCard(currentDeckId, card.id)
+    } catch (err) {
+      useToastStore.getState().showError(err instanceof ApiError ? err.message : 'Could not delete that card.')
     }
   }
 
@@ -84,17 +121,14 @@ export function DeckDetailRoute() {
         open={editDeckOpen}
         onOpenChange={setEditDeckOpen}
         deck={deck}
-        onSubmit={(name, description) => renameDeck(deck.id, name, description || undefined)}
+        onSubmit={handleRenameDeck}
       />
       <ConfirmDialog
         open={deleteDeckOpen}
         onOpenChange={setDeleteDeckOpen}
         title="Delete deck?"
         description={`"${deck.name}" and all its cards will be permanently removed.`}
-        onConfirm={() => {
-          deleteDeck(deck.id)
-          navigate('/')
-        }}
+        onConfirm={handleDeleteDeck}
       />
       <CardFormDialog
         open={cardFormOpen}
@@ -107,7 +141,7 @@ export function DeckDetailRoute() {
         onOpenChange={(open) => !open && setDeletingCard(null)}
         title="Delete card?"
         description="This card will be permanently removed from the deck."
-        onConfirm={() => deletingCard && deleteCard(deck.id, deletingCard.id)}
+        onConfirm={() => deletingCard && handleDeleteCard(deletingCard)}
       />
     </div>
   )

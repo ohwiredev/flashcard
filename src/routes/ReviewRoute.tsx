@@ -7,15 +7,20 @@ import { ReviewComplete } from '../components/review/ReviewComplete'
 import { ReviewControls } from '../components/review/ReviewControls'
 import { ReviewProgress } from '../components/review/ReviewProgress'
 import { useDeck } from '../hooks/useDeck'
+import { useFlashcardStore } from '../lib/store'
 import type { Deck } from '../lib/types'
 import { shuffle } from '../lib/utils'
 
 export function ReviewRoute() {
   const { deckId } = useParams()
   const deck = useDeck(deckId)
+  const status = useFlashcardStore((state) => state.status)
   const navigate = useNavigate()
 
   if (!deck) {
+    if (status === 'loading' || status === 'idle') {
+      return <div className="mx-auto max-w-3xl px-4 py-10 text-sm text-fg-muted sm:px-6 sm:py-14">Loading…</div>
+    }
     return <Navigate to="/" replace />
   }
 
