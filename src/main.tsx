@@ -7,7 +7,7 @@ import './styles/index.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="dark">
       <BrowserRouter>
         <App />
       </BrowserRouter>

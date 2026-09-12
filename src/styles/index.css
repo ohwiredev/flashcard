@@ -37,18 +37,18 @@
 }
 
 .dark {
-  --color-bg: oklch(14% 0.008 260);
-  --color-bg-sunken: oklch(11.5% 0.008 260);
-  --color-bg-elevated: oklch(19% 0.009 260);
+  --color-bg: oklch(22% 0.009 260);
+  --color-bg-sunken: oklch(18% 0.008 260);
+  --color-bg-elevated: oklch(27% 0.01 260);
   --color-fg: oklch(96% 0.003 260);
-  --color-fg-muted: oklch(70% 0.012 260);
-  --color-fg-subtle: oklch(58% 0.012 260);
+  --color-fg-muted: oklch(74% 0.012 260);
+  --color-fg-subtle: oklch(62% 0.012 260);
   --color-accent: oklch(70% 0.16 260);
   --color-accent-fg: oklch(15% 0.02 260);
   --color-accent-soft: oklch(70% 0.16 260 / 0.16);
-  --color-border: oklch(28% 0.008 260);
-  --color-border-strong: oklch(36% 0.01 260);
-  --color-surface-translucent: oklch(16% 0.008 260 / 0.72);
+  --color-border: oklch(35% 0.009 260);
+  --color-border-strong: oklch(43% 0.011 260);
+  --color-surface-translucent: oklch(24% 0.009 260 / 0.72);
 
   --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.2);
   --shadow-card-hover: 0 2px 4px oklch(0% 0 0 / 0.3), 0 12px 28px -8px oklch(0% 0 0 / 0.5);
