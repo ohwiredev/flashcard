@@ -2,7 +2,8 @@ import type { Env, SessionUser } from './types'
 
 const SESSION_COOKIE = 'session'
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
-const PBKDF2_ITERATIONS = 150_000
+/** workerd refuses PBKDF2 above 100,000 iterations, so this is the highest the runtime allows. */
+const PBKDF2_ITERATIONS = 100_000
 
 function toHex(bytes: Uint8Array | ArrayBuffer): string {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)

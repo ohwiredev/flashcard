@@ -27,6 +27,7 @@ npm run dev
 - `npm run db:migrate:local` — apply the schema to the local D1 database
 - `npm run db:migrate:remote` — apply the schema to the production D1 database
 - `npm run create-account -- <email> <password> [--remote]` — create the single login account and seed starter decks
+- `npm run create-account -- <email> <password> [--remote] --reset-password` — replace the password on an existing account and sign out its sessions
 
 ## Backend
 
@@ -64,7 +65,8 @@ production deploy, and every other branch gets a preview deploy.
    ```
 
    Both commands are safe to re-run. The migration uses `CREATE TABLE IF NOT EXISTS`, and
-   creating an account that already exists fails without changing anything.
+   creating an account that already exists fails without changing anything. Add `--reset-password`
+   to change the password on an account that is already there.
 
 ### Notes
 
@@ -73,6 +75,8 @@ production deploy, and every other branch gets a preview deploy.
 - `run_worker_first` in `wrangler.toml` sends `/api/*` to the Worker. Everything else is served from
   the static assets, and `not_found_handling = "single-page-application"` makes deep links such as
   `/decks/<id>` fall back to `index.html`.
+- Passwords are hashed with PBKDF2-SHA256 at 100,000 iterations, the most the Workers runtime
+  allows. `scripts/create-account.mjs` has to use the same count or logins fail.
 - A Wrangler configuration file overrides bindings and plain environment variables set in the
   dashboard, so keep changes to bindings in `wrangler.toml`.
 - `npm run cf:deploy` uploads a build directly from your machine. It is a fallback for when the Git
